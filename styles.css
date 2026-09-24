@@ -249,6 +249,10 @@ h1 {
   touch-action: none;
 }
 
+.game-screen.is-mouse .board-canvas-clip {
+  cursor: crosshair;
+}
+
 .preview-frame {
   width: min(100%, 17.5rem);
 }
@@ -366,10 +370,31 @@ h1 {
 
 .btn-secondary,
 .btn-ghost,
-.btn-direction {
+.btn-direction,
+.btn-mode {
   background: transparent;
   color: var(--color-text);
   border-color: var(--color-border);
+}
+
+.mode-switch {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-xs);
+  width: 100%;
+}
+
+.btn-mode {
+  width: 100%;
+  min-height: var(--control-min);
+  padding: 0.65rem 0.5rem;
+  font-size: var(--text-sm);
+}
+
+.btn-mode[aria-pressed='true'] {
+  background: var(--color-accent);
+  color: var(--color-accent-ink);
+  border-color: transparent;
 }
 
 .btn-ghost {
@@ -443,7 +468,8 @@ h1 {
 
   .btn-secondary:hover:not(:disabled),
   .btn-ghost:hover:not(:disabled),
-  .btn-direction:hover:not(:disabled) {
+  .btn-direction:hover:not(:disabled),
+  .btn-mode:hover:not(:disabled):not([aria-pressed='true']) {
     border-color: color-mix(in srgb, var(--color-accent) 70%, var(--color-border));
     color: var(--color-accent);
   }

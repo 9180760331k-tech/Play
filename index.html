@@ -24,6 +24,10 @@
           </div>
           <button id="start-button" class="btn btn-primary" type="button">Начать игру</button>
           <p id="start-record" class="record"></p>
+          <div class="mode-switch" role="group" aria-label="Способ управления">
+            <button class="btn btn-mode" type="button" data-control-mode="mouse" aria-pressed="true">Мышь</button>
+            <button class="btn btn-mode" type="button" data-control-mode="keyboard" aria-pressed="false">Клавиатура</button>
+          </div>
           <p id="start-hint" class="hint"></p>
         </section>
 
@@ -75,6 +79,10 @@
             </div>
           </div>
 
+          <div class="mode-switch" role="group" aria-label="Способ управления">
+            <button class="btn btn-mode" type="button" data-control-mode="mouse" aria-pressed="true">Мышь</button>
+            <button class="btn btn-mode" type="button" data-control-mode="keyboard" aria-pressed="false">Клавиатура</button>
+          </div>
           <p id="game-hint" class="hint"></p>
           <div id="touch-controls" class="dpad" role="group" aria-label="Направления" hidden>
             <button class="btn btn-direction dir-up" type="button" data-direction="up">

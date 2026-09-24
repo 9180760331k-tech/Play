@@ -7,8 +7,8 @@
   var CONFIG = {
     gridSize: 20,
     initialLength: 3,
-    initialTickMs: 150,
-    minTickMs: 70,
+    initialTickMs: 250,
+    minTickMs: 140,
     tickStepMs: 10,
     foodsPerSpeedup: 5,
     pointsPerFood: 10,
@@ -55,6 +55,10 @@
   var lastTime = 0;
   var accumulator = 0;
   var focusedScreen = '';
+  var controlMode = 'mouse';
+  var mousePoint = null;
+  var mouseArmed = false;
+  var blockMouse = false;
 
   var state = {
     screen: 'start',
@@ -264,6 +268,7 @@
     state.tickMs = CONFIG.initialTickMs;
     state.isNewRecord = false;
     state.screen = food ? 'playing' : 'won';
+    disarmMouse();
     resetClock();
     if (state.screen === 'won') finishRound();
   }
@@ -432,16 +437,85 @@
     return '';
   }
 
+  function disarmMouse() {
+    mouseArmed = false;
+    mousePoint = null;
+  }
+
+  function syncModeButtons() {
+    var buttons = document.querySelectorAll('[data-control-mode]');
+    var index;
+    for (index = 0; index < buttons.length; index += 1) {
+      buttons[index].setAttribute('aria-pressed', buttons[index].getAttribute('data-control-mode') === controlMode ? 'true' : 'false');
+    }
+  }
+
+  function setControlMode(mode) {
+    controlMode = mode === 'keyboard' ? 'keyboard' : 'mouse';
+    if (controlMode !== 'mouse') disarmMouse();
+    syncModeButtons();
+    applyPointerMode();
+  }
+
+  function eventToBoard(event) {
+    var rect = boardCanvas.getBoundingClientRect();
+    var dpr = window.devicePixelRatio || 1;
+    var logicalWidth = boardCanvas.width / dpr;
+    var logicalHeight = boardCanvas.height / dpr;
+    var x;
+    var y;
+
+    if (rect.width < 1 || rect.height < 1 || logicalWidth < 1 || logicalHeight < 1) return null;
+    x = ((event.clientX - rect.left) / rect.width) * logicalWidth;
+    y = ((event.clientY - rect.top) / rect.height) * logicalHeight;
+    if (x < 0 || y < 0 || x > logicalWidth || y > logicalHeight) return null;
+    return { x: x, y: y };
+  }
+
+  function directionFromMousePoint(point) {
+    var head = state.snake[0];
+    var dpr;
+    var cssSize;
+    var cell;
+    var dx;
+    var dy;
+
+    if (!head || !point) return null;
+    dpr = window.devicePixelRatio || 1;
+    cssSize = boardCanvas.width / dpr;
+    if (cssSize < 1) cssSize = boardFrame.clientWidth;
+    cell = cssSize / CONFIG.gridSize;
+    dx = point.x - (head.x * cell + cell / 2);
+    dy = point.y - (head.y * cell + cell / 2);
+    if (Math.max(Math.abs(dx), Math.abs(dy)) < cell / 2) return null;
+    if (Math.abs(dx) >= Math.abs(dy)) return dx >= 0 ? 'right' : 'left';
+    return dy >= 0 ? 'down' : 'up';
+  }
+
+  function steerFromMouse() {
+    var next;
+    if (controlMode !== 'mouse' || !mouseArmed || !mousePoint || state.queue.length > 0) return;
+    next = directionFromMousePoint(mousePoint);
+    if (!next || next === state.direction || isOpposite(next, state.direction)) return;
+    state.direction = next;
+  }
+
   function applyPointerMode() {
     var coarse = coarseQuery.matches;
+    var mouseHint = 'Веди курсор по полю — змейка поворачивает в его сторону';
     gameScreen.classList.toggle('has-touch', coarse);
+    gameScreen.classList.toggle('is-mouse', controlMode === 'mouse' && !coarse);
     touchControls.hidden = !coarse;
-    startHint.textContent = coarse
-      ? 'Свайп по полю или кнопки направлений. Кнопка «Пауза» останавливает игру.'
-      : 'Стрелки или WASD — движение. Пробел или Esc — пауза. Enter — старт.';
-    gameHint.textContent = coarse
-      ? 'Свайп по полю или кнопки ниже. Кнопка «Пауза» останавливает игру.'
-      : 'Стрелки или WASD — ход. Пробел или Esc — пауза.';
+    if (coarse) {
+      startHint.textContent = 'Свайп по полю или кнопки направлений. Кнопка «Пауза» останавливает игру.';
+      gameHint.textContent = 'Свайп по полю или кнопки ниже. Кнопка «Пауза» останавливает игру.';
+    } else if (controlMode === 'mouse') {
+      startHint.textContent = mouseHint;
+      gameHint.textContent = mouseHint;
+    } else {
+      startHint.textContent = 'Стрелки или WASD — движение. Пробел или Esc — пауза. Enter — старт.';
+      gameHint.textContent = 'Стрелки или WASD — ход. Пробел или Esc — пауза.';
+    }
   }
 
   function syncView() {
@@ -496,6 +570,7 @@
     }
     if (state.screen === 'paused') {
       state.screen = 'playing';
+      disarmMouse();
       resetClock();
       syncView();
     }
@@ -518,6 +593,7 @@
         accumulator >= state.tickMs
       ) {
         accumulator -= state.tickMs;
+        steerFromMouse();
         stepState();
         steps += 1;
       }
@@ -575,6 +651,7 @@
     direction = directionFromCode(event.code);
     if (!direction || state.screen !== 'playing') return;
     event.preventDefault();
+    if (controlMode !== 'keyboard') return;
     enqueueDirection(direction);
   }
 
@@ -604,6 +681,9 @@
     homeButton.addEventListener('click', showStart);
     touchControls.addEventListener('pointerdown', turnFromControl);
     touchControls.addEventListener('click', turnFromControl);
+    touchControls.addEventListener('touchstart', function () {
+      blockMouse = true;
+    }, { passive: true });
     window.addEventListener('keydown', onKeyDown);
     document.addEventListener('visibilitychange', function () {
       if (document.hidden && state.screen === 'playing') {
@@ -617,6 +697,7 @@
       'touchstart',
       function (event) {
         var target;
+        blockMouse = true;
         if (state.screen !== 'playing' || event.touches.length !== 1) {
           tracking = false;
           return;
@@ -656,6 +737,33 @@
     boardFrame.addEventListener('touchcancel', function () {
       tracking = false;
     });
+
+    boardCanvas.addEventListener('mousemove', function (event) {
+      var point;
+      if (blockMouse) {
+        blockMouse = false;
+        return;
+      }
+      if (controlMode !== 'mouse' || state.screen !== 'playing') return;
+      point = eventToBoard(event);
+      if (!point) return;
+      mousePoint = point;
+      mouseArmed = true;
+    });
+
+    boardCanvas.addEventListener('mouseleave', function () {
+      disarmMouse();
+    });
+
+    var modeSwitches = document.querySelectorAll('.mode-switch');
+    var modeIndex;
+    for (modeIndex = 0; modeIndex < modeSwitches.length; modeIndex += 1) {
+      modeSwitches[modeIndex].addEventListener('click', function (event) {
+        var button = event.target.closest('[data-control-mode]');
+        if (!button) return;
+        setControlMode(button.getAttribute('data-control-mode'));
+      });
+    }
 
     if (coarseQuery.addEventListener) coarseQuery.addEventListener('change', applyPointerMode);
     else if (coarseQuery.addListener) coarseQuery.addListener(applyPointerMode);

@@ -6,9 +6,97 @@
     <meta name="description" content="Змейка — браузерная игра. Собирай еду, расти и побей свой рекорд." />
     <title>Змейка</title>
     <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%230B1020'/%3E%3Crect x='6' y='14' width='8' height='8' rx='2' fill='%238CF5C2'/%3E%3Crect x='14' y='14' width='8' height='8' rx='3' fill='%23D9FFEE'/%3E%3Ccircle cx='24' cy='10' r='3' fill='%23FF7D87'/%3E%3C/svg%3E" />
+    <link rel="stylesheet" href="styles.css" />
+    <script src="script.js" defer></script>
   </head>
   <body>
-    <div id="root"></div>
-    <script type="module" src="/src/main.tsx"></script>
+    <main class="app">
+      <div class="shell">
+        <section id="start-screen" class="card start-screen">
+          <header class="start-copy">
+            <h1>Змейка</h1>
+            <p class="lede">Собирай. Расти. Побей свой рекорд</p>
+          </header>
+          <div class="board-frame preview-frame" id="preview-frame" aria-hidden="true">
+            <div class="board-canvas-clip">
+              <canvas id="preview-canvas"></canvas>
+            </div>
+          </div>
+          <button id="start-button" class="btn btn-primary" type="button">Начать игру</button>
+          <p id="start-record" class="record"></p>
+          <p id="start-hint" class="hint"></p>
+        </section>
+
+        <section id="game-screen" class="card game-screen" hidden>
+          <h1 class="sr-only">Змейка</h1>
+          <div class="hud">
+            <div class="hud-stats">
+              <p class="stat">
+                <span class="stat-label">Счёт</span>
+                <span id="score-value" class="stat-value accent">0</span>
+              </p>
+              <p class="stat">
+                <span class="stat-label">Рекорд</span>
+                <span id="best-value" class="stat-value">0</span>
+              </p>
+            </div>
+            <button id="pause-button" class="btn btn-ghost" type="button" aria-pressed="false">Пауза</button>
+          </div>
+
+          <div id="board-frame" class="board-frame">
+            <div class="board-canvas-clip">
+              <canvas id="board-canvas" aria-hidden="true"></canvas>
+            </div>
+            <div id="pause-overlay" class="overlay" hidden>
+              <div class="overlay-card">
+                <h2>Пауза</h2>
+                <button id="resume-button" class="btn btn-primary" type="button">Продолжить</button>
+              </div>
+            </div>
+            <div id="result-overlay" class="overlay" hidden role="dialog" aria-modal="true" aria-labelledby="result-title">
+              <div class="overlay-card">
+                <h2 id="result-title">Игра окончена</h2>
+                <dl class="result-stats">
+                  <div>
+                    <dt>Итоговый счёт</dt>
+                    <dd id="final-score">0</dd>
+                  </div>
+                  <div>
+                    <dt>Лучший результат</dt>
+                    <dd id="final-best">0</dd>
+                  </div>
+                </dl>
+                <p id="new-record" class="record-banner" hidden>Новый рекорд!</p>
+                <div class="stack">
+                  <button id="restart-button" class="btn btn-primary" type="button">Играть снова</button>
+                  <button id="home-button" class="btn btn-secondary" type="button">На главный экран</button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <p id="game-hint" class="hint"></p>
+          <div id="touch-controls" class="dpad" role="group" aria-label="Направления" hidden>
+            <button class="btn btn-direction dir-up" type="button" data-direction="up">
+              <span aria-hidden="true">↑</span>
+              <span class="sr-only">Вверх</span>
+            </button>
+            <button class="btn btn-direction dir-left" type="button" data-direction="left">
+              <span aria-hidden="true">←</span>
+              <span class="sr-only">Влево</span>
+            </button>
+            <button class="btn btn-direction dir-down" type="button" data-direction="down">
+              <span aria-hidden="true">↓</span>
+              <span class="sr-only">Вниз</span>
+            </button>
+            <button class="btn btn-direction dir-right" type="button" data-direction="right">
+              <span aria-hidden="true">→</span>
+              <span class="sr-only">Вправо</span>
+            </button>
+          </div>
+          <p id="live-status" class="sr-only" aria-live="polite"></p>
+        </section>
+      </div>
+    </main>
   </body>
 </html>
